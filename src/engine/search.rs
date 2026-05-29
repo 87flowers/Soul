@@ -145,10 +145,6 @@ pub struct Worker<'h> {
     pub accumulator: Vi16x8,
     pub stack: Box<[Stack; MAX_PLY + 1]>,
     pub history: &'h mut History,
-    /// Set while a null-move verification search is on the stack.
-    /// Suppresses nested NMP, which would otherwise recurse forever on
-    /// the same position at ever-shrinking depth.
-    pub is_nmp_verif: bool,
 }
 
 #[derive(Clone, Default, Debug)]
@@ -438,7 +434,6 @@ impl<'cfg> Searcher<'cfg> {
                 .try_into()
                 .unwrap_or_else(|_| unreachable!()),
             history,
-            is_nmp_verif: false,
         };
 
         let mut last_iter_elapsed = 0;
@@ -950,7 +945,6 @@ impl Worker<'_> {
             && !self.stack[ply].is_nmred
             && static_eval >= beta
             && self.pos.has_non_pawn_material(self.pos.stm)
-            && depth > 1
         {
             let eval_r = ((static_eval - beta) / nmp_eval_divisor()).min(nmp_eval_max());
             let r = nmp_base_r() + depth / nmp_depth_divisor() + eval_r;
@@ -974,8 +968,12 @@ impl Worker<'_> {
             self.stack[ply + 1].is_null = false;
 
             if score >= beta {
+                if depth < 4 {
+                    return Ok(score);
+                }
+
                 self.stack[ply].is_nmred = true;
-                let result = self.negamax::<NonPvNode>(searcher, (depth - r - nmp_ply_offset()).max(0), beta - 1, beta, ply, None);
+                let result = self.negamax::<NonPvNode>(searcher, (depth - 3).max(0), alpha, beta, ply, None);
                 self.stack[ply].is_nmred = false;
 
                 return result;
