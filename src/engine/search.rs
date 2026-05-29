@@ -243,6 +243,7 @@ pub struct Stack {
     pub moved_to: Square,
     pub static_eval: i32,
     pub is_null: bool,
+    pub is_nmred: bool,
 }
 
 /// Search was cut short — time, node limit, or external stop signal.
@@ -374,6 +375,7 @@ impl Default for Stack {
             moved_to: Square(0),
             static_eval: tt::SCORE_NONE,
             is_null: false,
+            is_nmred: false,
         }
     }
 }
@@ -945,9 +947,10 @@ impl Worker<'_> {
         if !in_check
             && !N::PV
             && !self.stack[ply].is_null
-            && !self.is_nmp_verif
+            && !self.stack[ply].is_nmred
             && static_eval >= beta
             && self.pos.has_non_pawn_material(self.pos.stm)
+            && depth > 4
         {
             let eval_r = ((static_eval - beta) / nmp_eval_divisor()).min(nmp_eval_max());
             let r = nmp_base_r() + depth / nmp_depth_divisor() + eval_r;
@@ -971,26 +974,11 @@ impl Worker<'_> {
             self.stack[ply + 1].is_null = false;
 
             if score >= beta {
-                let null_score = if score > MATE_BOUND { beta } else { score };
+                self.stack[ply].is_nmred = true;
+                let result = self.negamax::<NonPvNode>(searcher, (depth - r - nmp_ply_offset()).max(0), beta - 1, beta, ply, None);
+                self.stack[ply].is_nmred = false;
 
-                // ── Verification Search ──
-                // At or below `nmp_verif_min_depth`, trust the cutoff outright.
-                // Cheap nodes are almost never zugzwangs. Above the threshold,
-                // re-search the same position without a null move at reduced depth.
-                // If that also fails high, the cutoff is real; if it fails low we
-                // were about to prune a zugzwang or a tactic the null search
-                // couldn't see — fall through to the regular move loop.
-                if depth <= nmp_verif_min_depth() {
-                    return Ok(null_score);
-                }
-
-                self.is_nmp_verif = true;
-                let verif = self.negamax::<NonPvNode>(searcher, (depth - r - nmp_ply_offset()).max(0), beta - 1, beta, ply, None);
-                self.is_nmp_verif = false;
-
-                if verif? >= beta {
-                    return Ok(null_score);
-                }
+                return result;
             }
         }
 
