@@ -282,7 +282,7 @@ search_params! {
         T (rfp_margin,  45,  15),
 
         //                  default min   max  step
-        T (nmp_base_r,            4,  1,    6),
+        T (nmp_base_r,            3,  1,    6),
         T (nmp_depth_divisor,     3,  1,   14),
         T (nmp_eval_divisor,    200,  1,  320),
         T (nmp_eval_max,          3,  1,    6),
