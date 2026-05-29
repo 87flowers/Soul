@@ -950,7 +950,7 @@ impl Worker<'_> {
             && !self.stack[ply].is_nmred
             && static_eval >= beta
             && self.pos.has_non_pawn_material(self.pos.stm)
-            && depth > 4
+            && depth > 1
         {
             let eval_r = ((static_eval - beta) / nmp_eval_divisor()).min(nmp_eval_max());
             let r = nmp_base_r() + depth / nmp_depth_divisor() + eval_r;
