@@ -974,7 +974,7 @@ impl Worker<'_> {
                 }
 
                 self.stack[ply].is_nmred = true;
-                let result = self.negamax::<NonPvNode>(searcher, (depth - r).max(0), alpha, beta, ply, None);
+                let result = self.negamax::<NonPvNode>(searcher, (depth - 2).max(0), alpha, beta, ply, None);
                 self.stack[ply].is_nmred = false;
 
                 return result;
