@@ -974,18 +974,10 @@ impl Worker<'_> {
                 }
 
                 self.nmr_ply = Some(ply);
-                match self.negamax::<NonPvNode>(searcher, (depth / 2).max(0), alpha, beta, ply, None) {
-                    Ok(v) => {
-                        self.nmr_ply  = None;
-                        if v >= beta {
-                            return Ok(v);
-                        }
-                    },
-                    Err(e) => {
-                        self.nmr_ply  = None;
-                        return Err(e);
-                    },
-                }
+                let result = self.negamax::<NonPvNode>(searcher, (depth - 2).max(0), alpha, beta, ply, None);
+                self.nmr_ply = None;
+
+                return result;
             }
         }
 
