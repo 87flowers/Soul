@@ -974,10 +974,18 @@ impl Worker<'_> {
                 }
 
                 self.stack[ply].is_nmred = true;
-                let result = self.negamax::<NonPvNode>(searcher, (depth / 2).max(0), alpha, beta, ply, None);
-                self.stack[ply].is_nmred = false;
-
-                return result;
+                match self.negamax::<NonPvNode>(searcher, (depth / 2).max(0), alpha, beta, ply, None) {
+                    Ok(v) => {
+                        self.stack[ply].is_nmred = false;
+                        if v >= beta {
+                            return Ok(v);
+                        }
+                    },
+                    Err(e) => {
+                        self.stack[ply].is_nmred = false;
+                        return Err(e);
+                    },
+                }
             }
         }
 
