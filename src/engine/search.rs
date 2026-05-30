@@ -969,7 +969,7 @@ impl Worker<'_> {
             self.stack[ply + 1].is_null = false;
 
             if score >= beta {
-                if depth < 4 || self.nmr_ply.is_some() {
+                if self.nmr_ply.is_some() {
                     return Ok(score);
                 }
 
