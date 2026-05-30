@@ -145,6 +145,7 @@ pub struct Worker<'h> {
     pub accumulator: Vi16x8,
     pub stack: Box<[Stack; MAX_PLY + 1]>,
     pub history: &'h mut History,
+    pub nmr_ply: Option<usize>,
 }
 
 #[derive(Clone, Default, Debug)]
@@ -239,7 +240,6 @@ pub struct Stack {
     pub moved_to: Square,
     pub static_eval: i32,
     pub is_null: bool,
-    pub is_nmred: bool,
 }
 
 /// Search was cut short — time, node limit, or external stop signal.
@@ -371,7 +371,6 @@ impl Default for Stack {
             moved_to: Square(0),
             static_eval: tt::SCORE_NONE,
             is_null: false,
-            is_nmred: false,
         }
     }
 }
@@ -434,6 +433,7 @@ impl<'cfg> Searcher<'cfg> {
                 .try_into()
                 .unwrap_or_else(|_| unreachable!()),
             history,
+            nmr_ply: None,
         };
 
         let mut last_iter_elapsed = 0;
@@ -942,7 +942,7 @@ impl Worker<'_> {
         if !in_check
             && !N::PV
             && !self.stack[ply].is_null
-            && !self.stack[ply].is_nmred
+            && self.nmr_ply != Some(ply)
             && static_eval >= beta
             && self.pos.has_non_pawn_material(self.pos.stm)
             && depth > 1
@@ -969,20 +969,20 @@ impl Worker<'_> {
             self.stack[ply + 1].is_null = false;
 
             if score >= beta {
-                if depth < 4 {
+                if depth < 4 || self.nmr_ply.is_some() {
                     return Ok(score);
                 }
 
-                self.stack[ply].is_nmred = true;
+                self.nmr_ply = Some(ply);
                 match self.negamax::<NonPvNode>(searcher, (depth / 2).max(0), alpha, beta, ply, None) {
                     Ok(v) => {
-                        self.stack[ply].is_nmred = false;
+                        self.nmr_ply  = None;
                         if v >= beta {
                             return Ok(v);
                         }
                     },
                     Err(e) => {
-                        self.stack[ply].is_nmred = false;
+                        self.nmr_ply  = None;
                         return Err(e);
                     },
                 }
