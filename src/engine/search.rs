@@ -669,6 +669,8 @@ impl<'cfg> Searcher<'cfg> {
             self.pv_history
                 .push_back(PvSnapshot { depth, time_ms: elapsed, score: self.prev_score, line: self.prev_pv });
 
+            self.publish();
+
             // Bounded history: the TUI only needs the most recent points for the sparkline.
             if self.pv_history.len() > 30 {
                 self.pv_history.pop_front();
