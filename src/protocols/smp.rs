@@ -69,7 +69,7 @@ pub fn vote(result_slots: &[AtomicU64]) -> usize {
         return 0;
     };
 
-    let weight = |r: &ThreadResult| r.score - min_score + 14;
+    let weight = |r: &ThreadResult| 1;
     let votes = |mv| results.iter().filter(|r| r.mv == mv && r.score != -INF).map(weight).sum::<i32>();
 
     let mut best = 0;
