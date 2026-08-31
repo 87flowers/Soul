@@ -403,7 +403,8 @@ impl History {
         }
 
         let refine = (minor * minor_weight + major * major_weight) / (minor_weight + major_weight);
-        pawn + refine + kpn + kpb + kpr + kpq + knr + knq + kbr + kbq
+        let triplets = (kpn + kpb + kpr + kpq + knr + knq + kbr + kbq) / 8;
+        pawn + refine + triplets
     }
 
     /// Updates all three evaluation correction tables (pawn, minor, major) with a search delta.
