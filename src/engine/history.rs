@@ -62,22 +62,8 @@ pub struct History {
     minor_correction: CorrectionHistory,
     /// Major piece placement correction (rooks + queens, both colors): `[side][major_hash & 0x3FFF]`.
     major_correction: CorrectionHistory,
-    /// King, Pawn, Knight Triplet
-    kpn: CorrectionHistory,
-    /// King, Pawn, Bishop Triplet
-    kpb: CorrectionHistory,
     /// King, Pawn, Rook Triplet
     kpr: CorrectionHistory,
-    /// King, Pawn, Queen Triplet
-    kpq: CorrectionHistory,
-    /// King, Knight, Rook Triplet
-    knr: CorrectionHistory,
-    /// King, Knight, Queen Triplet
-    knq: CorrectionHistory,
-    /// King, Bishop, Rook Triplet
-    kbr: CorrectionHistory,
-    /// King, Bishop, Queen Triplet
-    kbq: CorrectionHistory,
     /// Capture history: `[side][attacker][to][victim]` (~8 Elo).
     capt: CaptureHistory,
     /// Dynamic tuning synchronized with search parameters.
@@ -245,14 +231,7 @@ impl History {
             correction: CorrectionHistory::new(),
             minor_correction: CorrectionHistory::new(),
             major_correction: CorrectionHistory::new(),
-            kpn: CorrectionHistory::new(),
-            kpb: CorrectionHistory::new(),
             kpr: CorrectionHistory::new(),
-            kpq: CorrectionHistory::new(),
-            knr: CorrectionHistory::new(),
-            knq: CorrectionHistory::new(),
-            kbr: CorrectionHistory::new(),
-            kbq: CorrectionHistory::new(),
             capt: CaptureHistory::new(),
             params: HistoryParams::default(),
         }
@@ -267,14 +246,7 @@ impl History {
         self.correction.clear();
         self.minor_correction.clear();
         self.major_correction.clear();
-        self.kpn.clear();
-        self.kpb.clear();
         self.kpr.clear();
-        self.kpq.clear();
-        self.knr.clear();
-        self.knq.clear();
-        self.kbr.clear();
-        self.kbq.clear();
         self.capt.clear();
     }
 
@@ -361,30 +333,16 @@ impl History {
     /// are combined via a normalized weighted average to avoid over-counting
     /// correlated structural errors.
     #[inline(always)]
-    pub fn correction(&self, stm: Color, role_hash: [u64; 6], minor_weight: i32, major_weight: i32) -> i32 {
+    pub fn correction(&self, stm: Color, role_hash: [u64; 6], minor_weight: i32, major_weight: i32, kpr_weight: i32) -> i32 {
         let pawn_hash = role_hash[PieceType::Pawn];
         let minor_hash = role_hash[PieceType::Knight] ^ role_hash[PieceType::Bishop];
         let major_hash = role_hash[PieceType::Rook] ^ role_hash[PieceType::Queen];
-        let kpn_hash = role_hash[PieceType::King] ^ role_hash[PieceType::Pawn] ^ role_hash[PieceType::Knight];
-        let kpb_hash = role_hash[PieceType::King] ^ role_hash[PieceType::Pawn] ^ role_hash[PieceType::Bishop];
         let kpr_hash = role_hash[PieceType::King] ^ role_hash[PieceType::Pawn] ^ role_hash[PieceType::Rook];
-        let kpq_hash = role_hash[PieceType::King] ^ role_hash[PieceType::Pawn] ^ role_hash[PieceType::Queen];
-        let knr_hash = role_hash[PieceType::King] ^ role_hash[PieceType::Knight] ^ role_hash[PieceType::Rook];
-        let knq_hash = role_hash[PieceType::King] ^ role_hash[PieceType::Knight] ^ role_hash[PieceType::Queen];
-        let kbr_hash = role_hash[PieceType::King] ^ role_hash[PieceType::Bishop] ^ role_hash[PieceType::Rook];
-        let kbq_hash = role_hash[PieceType::King] ^ role_hash[PieceType::Bishop] ^ role_hash[PieceType::Queen];
 
         let pawn = self.correction.get(stm, pawn_hash);
         let minor = self.minor_correction.get(stm, minor_hash);
         let major = self.major_correction.get(stm, major_hash);
-        let kpn = self.kpn.get(stm, kpn_hash);
-        let kpb = self.kpb.get(stm, kpb_hash);
         let kpr = self.kpr.get(stm, kpr_hash);
-        let kpq = self.kpq.get(stm, kpq_hash);
-        let knr = self.knr.get(stm, knr_hash);
-        let knq = self.knq.get(stm, knq_hash);
-        let kbr = self.kbr.get(stm, kbr_hash);
-        let kbq = self.kbq.get(stm, kbq_hash);
 
         #[cfg(feature = "corrstats")]
         {
@@ -392,19 +350,11 @@ impl History {
             record_read(Table::Pawn, pawn);
             record_read(Table::Minor, minor);
             record_read(Table::Major, major);
-            record_read(Table::Kpn, kpn);
-            record_read(Table::Kpb, kpb);
             record_read(Table::Kpr, kpr);
-            record_read(Table::Kpq, kpq);
-            record_read(Table::Knr, knr);
-            record_read(Table::Knq, knq);
-            record_read(Table::Kbr, kbr);
-            record_read(Table::Kbq, kbq);
         }
 
-        let refine = (minor * minor_weight + major * major_weight) / (minor_weight + major_weight);
-        let triplets = (kpn + kpb + kpr + kpq + knr + knq + kbr + kbq) / 8;
-        pawn + refine + triplets
+        let refine = (minor * minor_weight + major * major_weight + kpr * kpr_weight) / (minor_weight + major_weight + kpr_weight);
+        pawn + refine
     }
 
     /// Updates all three evaluation correction tables (pawn, minor, major) with a search delta.
@@ -413,26 +363,12 @@ impl History {
         let pawn_hash = role_hash[PieceType::Pawn];
         let minor_hash = role_hash[PieceType::Knight] ^ role_hash[PieceType::Bishop];
         let major_hash = role_hash[PieceType::Rook] ^ role_hash[PieceType::Queen];
-        let kpn_hash = role_hash[PieceType::King] ^ role_hash[PieceType::Pawn] ^ role_hash[PieceType::Knight];
-        let kpb_hash = role_hash[PieceType::King] ^ role_hash[PieceType::Pawn] ^ role_hash[PieceType::Bishop];
         let kpr_hash = role_hash[PieceType::King] ^ role_hash[PieceType::Pawn] ^ role_hash[PieceType::Rook];
-        let kpq_hash = role_hash[PieceType::King] ^ role_hash[PieceType::Pawn] ^ role_hash[PieceType::Queen];
-        let knr_hash = role_hash[PieceType::King] ^ role_hash[PieceType::Knight] ^ role_hash[PieceType::Rook];
-        let knq_hash = role_hash[PieceType::King] ^ role_hash[PieceType::Knight] ^ role_hash[PieceType::Queen];
-        let kbr_hash = role_hash[PieceType::King] ^ role_hash[PieceType::Bishop] ^ role_hash[PieceType::Rook];
-        let kbq_hash = role_hash[PieceType::King] ^ role_hash[PieceType::Bishop] ^ role_hash[PieceType::Queen];
 
         self.correction.update(stm, pawn_hash, diff, depth, &self.params);
         self.minor_correction.update(stm, minor_hash, diff, depth, &self.params);
         self.major_correction.update(stm, major_hash, diff, depth, &self.params);
-        self.kpn.update(stm, kpn_hash, diff, depth, &self.params);
-        self.kpb.update(stm, kpb_hash, diff, depth, &self.params);
         self.kpr.update(stm, kpr_hash, diff, depth, &self.params);
-        self.kpq.update(stm, kpq_hash, diff, depth, &self.params);
-        self.knr.update(stm, knr_hash, diff, depth, &self.params);
-        self.knq.update(stm, knq_hash, diff, depth, &self.params);
-        self.kbr.update(stm, kbr_hash, diff, depth, &self.params);
-        self.kbq.update(stm, kbq_hash, diff, depth, &self.params);
 
         #[cfg(feature = "corrstats")]
         {
@@ -440,14 +376,7 @@ impl History {
             record_update(Table::Pawn);
             record_update(Table::Minor);
             record_update(Table::Major);
-            record_update(Table::Kpn);
-            record_update(Table::Kpb);
             record_update(Table::Kpr);
-            record_update(Table::Kpq);
-            record_update(Table::Knr);
-            record_update(Table::Knq);
-            record_update(Table::Kbr);
-            record_update(Table::Kbq);
         }
     }
 
@@ -476,14 +405,7 @@ impl Default for History {
             correction: CorrectionHistory { data: Box::new([]) },
             minor_correction: CorrectionHistory { data: Box::new([]) },
             major_correction: CorrectionHistory { data: Box::new([]) },
-            kpn: CorrectionHistory { data: Box::new([]) },
-            kpb: CorrectionHistory { data: Box::new([]) },
             kpr: CorrectionHistory { data: Box::new([]) },
-            kpq: CorrectionHistory { data: Box::new([]) },
-            knr: CorrectionHistory { data: Box::new([]) },
-            knq: CorrectionHistory { data: Box::new([]) },
-            kbr: CorrectionHistory { data: Box::new([]) },
-            kbq: CorrectionHistory { data: Box::new([]) },
             capt: CaptureHistory { data: Box::new([]) },
             params: HistoryParams::default(),
         }

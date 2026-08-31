@@ -320,6 +320,7 @@ search_params! {
         //                default min  max  step
         T (minor_corr_weight, 114,  8),
         T (major_corr_weight, 144,  8),
+        T (kpr_corr_weight,    94,  8),
         T (corr_weight_div,     1,  1,  16),
         T (corr_weight_max,    32,  4, 128),  // ·256
     }

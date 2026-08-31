@@ -24,8 +24,8 @@ use crate::{
     },
 };
 
-const TABLES: usize = 11;
-const NAMES: [&str; TABLES] = ["pawn", "minor", "major", "kpn", "kpb", "kpr", "kpq", "knr", "knq", "kbr", "kbq"];
+const TABLES: usize = 4;
+const NAMES: [&str; TABLES] = ["pawn", "minor", "major", "kpr"];
 
 #[rustfmt::skip]
 const COLS: [(&str, usize, bool); 8] = [
@@ -44,14 +44,7 @@ pub enum Table {
     Pawn = 0,
     Minor = 1,
     Major = 2,
-    Kpn = 3,
-    Kpb = 4,
-    Kpr = 5,
-    Kpq = 6,
-    Knr = 7,
-    Knq = 8,
-    Kbr = 9,
-    Kbq = 10,
+    Kpr = 3,
 }
 
 struct Counters {
@@ -150,7 +143,7 @@ fn sat_pct(i: usize) -> f64 {
 /// Pawn is unscaled, so it sits at full weight.
 fn weights() -> [i32; TABLES] {
     let sp = SearchParams::default();
-    [CORRECTION_WEIGHT_SCALE, sp.minor_corr_weight, sp.major_corr_weight]
+    [CORRECTION_WEIGHT_SCALE, sp.minor_corr_weight, sp.major_corr_weight, sp.kpr_corr_weight]
 }
 
 /// Pads to the column's width and alignment first, then wraps in `rgb`,
