@@ -329,15 +329,11 @@ impl History {
     /// are combined via a normalized weighted average to avoid over-counting
     /// correlated structural errors.
     #[inline(always)]
-    pub fn correction(
-        &self,
-        stm: Color,
-        pawn_hash: u64,
-        minor_hash: u64,
-        major_hash: u64,
-        minor_weight: i32,
-        major_weight: i32,
-    ) -> i32 {
+    pub fn correction(&self, stm: Color, role_hash: [u64; 6], minor_weight: i32, major_weight: i32) -> i32 {
+        let pawn_hash = role_hash[PieceType::Pawn];
+        let minor_hash = role_hash[PieceType::Knight] ^ role_hash[PieceType::Bishop];
+        let major_hash = role_hash[PieceType::Rook] ^ role_hash[PieceType::Queen];
+
         let pawn = self.correction.get(stm, pawn_hash);
         let minor = self.minor_correction.get(stm, minor_hash);
         let major = self.major_correction.get(stm, major_hash);
@@ -356,7 +352,11 @@ impl History {
 
     /// Updates all three evaluation correction tables (pawn, minor, major) with a search delta.
     #[inline(always)]
-    pub fn update_correction(&mut self, stm: Color, pawn_hash: u64, minor_hash: u64, major_hash: u64, diff: i32, depth: i32) {
+    pub fn update_correction(&mut self, stm: Color, role_hash: [u64; 6], diff: i32, depth: i32) {
+        let pawn_hash = role_hash[PieceType::Pawn];
+        let minor_hash = role_hash[PieceType::Knight] ^ role_hash[PieceType::Bishop];
+        let major_hash = role_hash[PieceType::Rook] ^ role_hash[PieceType::Queen];
+
         self.correction.update(stm, pawn_hash, diff, depth, &self.params);
         self.minor_correction.update(stm, minor_hash, diff, depth, &self.params);
         self.major_correction.update(stm, major_hash, diff, depth, &self.params);

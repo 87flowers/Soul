@@ -419,7 +419,7 @@ impl PawnCache {
     /// Probes the cache by `pawn_key`, computing and caching on a miss.
     #[inline]
     pub fn probe(&mut self, board: &Position) -> PawnFeatures {
-        let key = board.pawn_key;
+        let key = board.pawn_key();
         let slot = &mut self.entries[key as usize & (Self::SIZE - 1)];
 
         if slot.key == key {

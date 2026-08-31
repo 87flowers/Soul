@@ -27,9 +27,7 @@ pub fn make_move(pos: &mut Position, mv: Move, acc: &mut I16x8) -> StateInfo {
     let state = StateInfo {
         castling_rights: pos.castling_rights,
         hash: pos.hash,
-        pawn_key: pos.pawn_key,
-        minor_key: pos.minor_key,
-        major_key: pos.major_key,
+        role_key: pos.role_key,
         captured,
         halfmove_clock: pos.halfmove_clock,
         en_passant: pos.en_passant,
@@ -100,9 +98,7 @@ pub fn unmake_move(pos: &mut Position, mv: Move, info: &StateInfo) {
     pos.en_passant = info.en_passant;
     pos.halfmove_clock = info.halfmove_clock;
     pos.hash = info.hash;
-    pos.pawn_key = info.pawn_key;
-    pos.minor_key = info.minor_key;
-    pos.major_key = info.major_key;
+    pos.role_key = info.role_key;
 
     if mv.is_castling() {
         revert_castling(pos, from, to);
@@ -169,18 +165,11 @@ pub fn update_piece<const ADD: bool>(pos: &mut Position, sq: Square, pt: PieceTy
     }
 }
 
-/// Routes one piece's Zobrist key into the correction key its type owns: pawns to
-/// `pawn_key`, knight and bishop to `minor_key`, rook and queen to `major_key`, king
-/// to none. XOR is self-inverse, so one call serves the departure and the arrival.
+/// Routes Zobrist key into the specific piece type key.
+/// XOR is self-inverse, so one call serves the departure and the arrival.
 #[inline(always)]
 fn toggle_corr_key(pos: &mut Position, pt: PieceType, color: Color, sq: Square) {
-    let key = zobrist::key_piece(pt, color, sq);
-    match pt {
-        PieceType::Pawn => pos.pawn_key ^= key,
-        PieceType::Knight | PieceType::Bishop => pos.minor_key ^= key,
-        PieceType::Rook | PieceType::Queen => pos.major_key ^= key,
-        PieceType::King | PieceType::None => {},
-    }
+    pos.role_key[pt] ^= zobrist::key_piece(pt, color, sq);
 }
 
 /// Undoes a castling move on the board.

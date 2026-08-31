@@ -91,9 +91,7 @@ fn zobrist_long_sequence() {
         let mv = find_uci_move(&pos, uci);
         pos.make_move(mv, &mut acc);
         assert_eq!(pos.hash, pos.calc_zobrist(), "Hash diverged after move {uci}. Position: {}", pos.as_fen());
-        assert_eq!(pos.pawn_key, pos.calc_pawn_hash(), "Pawn key diverged after move {uci}. Position: {}", pos.as_fen());
-        assert_eq!(pos.minor_key, pos.calc_minor_hash(), "Minor key diverged after move {uci}. Position: {}", pos.as_fen());
-        assert_eq!(pos.major_key, pos.calc_major_hash(), "Major key diverged after move {uci}. Position: {}", pos.as_fen());
+        assert_eq!(pos.role_key, pos.calc_role_keys(), "Role keys diverged after move {uci}. Position: {}", pos.as_fen());
         let fresh_acc = pos.initial_accumulator();
         assert_eq!(acc.to_array(), fresh_acc.to_array(), "Accumulator diverged after move {uci}");
     }
@@ -110,14 +108,12 @@ fn correction_keys_promotion_and_en_passant() {
     for (fen, uci) in cases {
         let mut pos = Position::from_fen(fen);
         let mut acc = pos.initial_accumulator();
-        let before = (pos.pawn_key, pos.minor_key, pos.major_key);
+        let before = pos.role_key;
         let mv = find_uci_move(&pos, uci);
         let undo = pos.make_move(mv, &mut acc);
-        assert_eq!(pos.pawn_key, pos.calc_pawn_hash(), "Pawn key diverged after {uci} from {fen}");
-        assert_eq!(pos.minor_key, pos.calc_minor_hash(), "Minor key diverged after {uci} from {fen}");
-        assert_eq!(pos.major_key, pos.calc_major_hash(), "Major key diverged after {uci} from {fen}");
+        assert_eq!(pos.role_key, pos.calc_role_hashes(), "Role keys diverged after {uci} from {fen}");
         pos.unmake_move(mv, &undo);
-        assert_eq!((pos.pawn_key, pos.minor_key, pos.major_key), before, "Keys not restored after unmaking {uci} from {fen}");
+        assert_eq!(pos.role_key, before, "Keys not restored after unmaking {uci} from {fen}");
     }
 }
 

@@ -851,7 +851,7 @@ impl Worker<'_> {
     #[inline]
     fn corrected_eval(&self, raw_eval: i32, sp: &SearchParams) -> i32 {
         let correction = self.history.correction(
-            self.pos.stm, self.pos.pawn_key, self.pos.minor_key, self.pos.major_key, sp.minor_corr_weight, sp.major_corr_weight,
+            self.pos.stm, self.pos.role_key, sp.minor_corr_weight, sp.major_corr_weight,
         ) / CORRECTION_SCALE;
 
         (raw_eval + correction).clamp(-MATE_BOUND, MATE_BOUND)
@@ -1536,7 +1536,7 @@ impl Worker<'_> {
             let diff = res.best_eval - raw_static_eval;
 
             self.history
-                .update_correction(self.pos.stm, self.pos.pawn_key, self.pos.minor_key, self.pos.major_key, diff, depth);
+                .update_correction(self.pos.stm, self.pos.role_key, diff, depth);
         }
         Ok(res.best_eval)
     }

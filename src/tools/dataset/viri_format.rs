@@ -435,9 +435,7 @@ fn parse_packed_board(data: &[u8]) -> Option<(Position, u8, u32)> {
         || (pos.castling_rights & BLACK_OOO != 0 && pos.castling_rooks[ROOK_B_QS] != Square(56));
 
     pos.hash = pos.calc_zobrist();
-    pos.pawn_key = pos.calc_pawn_hash();
-    pos.minor_key = pos.calc_minor_hash();
-    pos.major_key = pos.calc_major_hash();
+    pos.role_key = pos.calc_role_hashes();
 
     let ply = u32::from(fullmove).saturating_sub(1) * 2 + u32::from(stm == Color::Black);
     Some((pos, result, ply))

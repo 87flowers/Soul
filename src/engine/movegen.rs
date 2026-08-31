@@ -642,9 +642,7 @@ mod tests {
         }
 
         assert_eq!(pos.hash, pos.calc_zobrist(), "hash desynced {}", context(before, mv));
-        assert_eq!(pos.pawn_key, pos.calc_pawn_hash(), "pawn key desynced {}", context(before, mv));
-        assert_eq!(pos.minor_key, pos.calc_minor_hash(), "minor key desynced {}", context(before, mv));
-        assert_eq!(pos.major_key, pos.calc_major_hash(), "major key desynced {}", context(before, mv));
+        assert_eq!(pos.role_key, pos.calc_role_hashes(), "role keys desynced {}", context(before, mv));
     }
 
     /// Field-wise board equality across everything make/unmake can touch.
@@ -653,9 +651,7 @@ mod tests {
             && a.role_bb == b.role_bb
             && a.occ == b.occ
             && a.hash == b.hash
-            && a.pawn_key == b.pawn_key
-            && a.minor_key == b.minor_key
-            && a.major_key == b.major_key
+            && a.role_key == b.role_key
             && a.pieces == b.pieces
             && a.castling_rights == b.castling_rights
             && a.stm == b.stm

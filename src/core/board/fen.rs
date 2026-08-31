@@ -252,9 +252,7 @@ fn finish_position(mut pos: Position) -> Result<Position, FenError> {
     }
 
     pos.hash = pos.calc_zobrist();
-    pos.pawn_key = pos.calc_pawn_hash();
-    pos.minor_key = pos.calc_minor_hash();
-    pos.major_key = pos.calc_major_hash();
+    pos.role_key = pos.calc_role_hashes();
     Ok(pos)
 }
 
