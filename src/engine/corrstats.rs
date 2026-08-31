@@ -24,8 +24,8 @@ use crate::{
     },
 };
 
-const TABLES: usize = 3;
-const NAMES: [&str; TABLES] = ["pawn", "minor", "major"];
+const TABLES: usize = 11;
+const NAMES: [&str; TABLES] = ["pawn", "minor", "major", "kpn", "kpb", "kpr", "kpq", "knr", "knq", "kbr", "kbq"];
 
 #[rustfmt::skip]
 const COLS: [(&str, usize, bool); 8] = [
@@ -44,6 +44,14 @@ pub enum Table {
     Pawn = 0,
     Minor = 1,
     Major = 2,
+    Kpn = 3,
+    Kpb = 4,
+    Kpr = 5,
+    Kpq = 6,
+    Knr = 7,
+    Knq = 8,
+    Kbr = 9,
+    Kbq = 10,
 }
 
 struct Counters {
